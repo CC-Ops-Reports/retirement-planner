@@ -127,11 +127,15 @@
       <p class="hint">What he needs to live on each year, in today's dollars. The tool grows this with inflation.</p>
       <label>Annual spending need <span class="sub">(after-tax lifestyle cost)</span></label>
       <input id="spending" type="number" value="90000">
+      <label>Vacation budget <span class="sub">$ per year for the annual trip (today's dollars)</span></label>
+      <input id="vacBudget" type="number" value="12000">
+      <p style="margin:10px 0 4px; font-style:italic; font-weight:700; color:#2e7d52;">💛 Courtney is making you take a vacation a year — so DO IT!</p>
       <div class="row">
         <div><label>Inflation <span class="sub">% / yr</span></label><input id="inflation" type="number" step="0.1" value="2.5"></div>
         <div><label>Investment return <span class="sub">% / yr</span></label><input id="return" type="number" step="0.1" value="5.5"></div>
       </div>
-      <label>One-time / extra spending <span class="sub">optional — "age:amount", e.g. a new roof or big trip</span></label>
+      <label>One-time / extra spending
+        <span class="sub" style="display:block; margin-top:3px;">optional — "age:amount", e.g. a new roof or big trip</span></label>
       <input id="lumpSpend" type="text" placeholder="e.g. 72:30000, 85:60000">
     </div>
 
@@ -170,10 +174,10 @@
   <!-- ============ VACATION WIDGET ============ -->
   <div class="card" style="border-color:#bcdfd0; background:linear-gradient(180deg,#f3fbf6,#ffffff);">
     <h2>🌴 Annual Vacation Planner</h2>
-    <p class="hint">They're savers, not spenders — so let's prove the yearly trip is affordable. This adds a vacation
-      to their spending every year and shows whether the plan still holds up. (Spoiler: seeing the green check is the point.)</p>
-    <div class="row3">
-      <div><label>Vacation budget <span class="sub">$ per year, today's dollars</span></label><input id="vacBudget" type="number" value="12000"></div>
+    <p class="hint">They're savers, not spenders — so let's prove the yearly trip is affordable. Set the budget up in
+      <strong>Spending</strong>; here you just pick which years, and we show whether the plan still holds up.
+      (Spoiler: seeing the green check is the point.)</p>
+    <div class="row">
       <div><label>Start at Dad's age</label><input id="vacFrom" type="number" value="60"></div>
       <div><label>Through Dad's age <span class="sub">the "go-go" years</span></label><input id="vacTo" type="number" value="80"></div>
     </div>
