@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dad's Retirement Planner</title>
+<style>
+  :root{
+    --blue:#1f5f8b; --blue-d:#16405e; --green:#2e7d52; --red:#b3402c;
+    --amber:#c98a16; --ink:#1f2933; --muted:#5b6770; --line:#d7dde2;
+    --bg:#f4f6f8; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); margin:0; line-height:1.5; font-size:17px;}
+  header{background:var(--blue-d); color:#fff; padding:22px 26px;}
+  header h1{margin:0; font-size:24px;}
+  header p{margin:6px 0 0; opacity:.9; font-size:15px;}
+  .wrap{max-width:1080px; margin:0 auto; padding:22px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:22px;}
+  .card h2{margin:0 0 4px; font-size:19px; color:var(--blue-d);}
+  .card .hint{color:var(--muted); font-size:14px; margin:0 0 14px;}
+  label{display:block; font-weight:600; font-size:14px; margin:12px 0 4px;}
+  label .sub{font-weight:400; color:var(--muted); font-size:13px;}
+  input,select{width:100%; padding:10px 12px; font-size:16px; border:1px solid var(--line);
+    border-radius:8px; background:#fff;}
+  input:focus,select:focus{outline:2px solid var(--blue); border-color:var(--blue);}
+  input[type=checkbox]{width:auto; transform:scale(1.3); margin-right:8px;}
+  .check{display:flex; align-items:center; font-weight:600; font-size:14px; margin:14px 0 4px;}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .btn{display:inline-block; background:var(--blue); color:#fff; border:none; padding:14px 22px;
+    font-size:17px; font-weight:600; border-radius:9px; cursor:pointer;}
+  .btn:hover{background:var(--blue-d);}
+  .btn.secondary{background:#fff; color:var(--blue-d); border:1px solid var(--blue);}
+  .btn.secondary:hover{background:#eef4f8;}
+  .actions{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:8px 0 28px;}
+  .summary{display:grid; gap:14px;}
+  .stat{background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; text-align:center;}
+  .stat .num{font-size:22px; font-weight:700;}
+  .stat .lbl{font-size:13px; color:var(--muted); margin-top:4px;}
+  .good{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th,td{padding:7px 8px; text-align:right; border-bottom:1px solid var(--line);}
+  th{background:#eef2f5; position:sticky; top:0; font-size:12px; color:var(--blue-d);}
+  td:first-child,th:first-child{text-align:left;}
+  .tablewrap{max-height:430px; overflow:auto; border:1px solid var(--line); border-radius:10px;}
+  .flag{display:inline-block; padding:1px 7px; border-radius:20px; font-size:11px; font-weight:700;}
+  .flag.irmaa{background:#fbe6c8; color:#7a5400;}
+  .flag.surv{background:#e2dcf3; color:#4b3b8a;}
+  canvas{width:100%; height:300px; background:#fff; border:1px solid var(--line); border-radius:10px;}
+  .legend{display:flex; gap:18px; font-size:13px; margin:10px 0 0; flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  details{border:1px solid var(--line); border-radius:10px; padding:0 16px; margin-bottom:22px; background:#fff;}
+  details summary{cursor:pointer; font-weight:600; padding:14px 0; color:var(--blue-d);}
+  .disclaimer{background:#fff7ea; border:1px solid #f0d9a8; border-radius:10px; padding:14px 18px;
+    font-size:14px; color:#6b5316; margin-bottom:22px;}
+  .twocol-results{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
+  @media(max-width:820px){.twocol-results{grid-template-columns:1fr}}
+  .compare-box{border:1px solid var(--line); border-radius:10px; padding:14px;}
+  .compare-box h3{margin:0 0 8px; font-size:15px;}
+  .savings{font-size:15px; padding:12px 16px; border-radius:10px; margin-bottom:22px;}
+  .savings.pos{background:#e6f4ec; border:1px solid #b6dcc4; color:#1d5e3a;}
+  .savings.neg{background:#fbeae6; border:1px solid #e6bdb2; color:#8a2c1a;}
+  @media print{
+    .actions,.disclaimer .nope,header p,.card .hint,details{display:none!important}
+    .tablewrap{max-height:none!important; overflow:visible!important}
+    body{font-size:12px} .card{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏡 Dad's Retirement Planner</h1>
+  <p>A private, year-by-year forecast. Nothing here is sent anywhere — your numbers stay on this computer.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="disclaimer">
+    <strong>Please read:</strong> This is a planning estimate to help you see the tradeoffs — <em>not</em> tax or
+    investment advice. The tax, RMD, Social Security, and Medicare (IRMAA) math is simplified and uses editable
+    assumptions that change every year. Before moving a large amount (especially a Roth conversion), confirm the
+    numbers with a CPA or fee-only advisor.
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="run()">▶ Run the Forecast</button>
+    <button class="btn secondary" onclick="saveData()">💾 Save</button>
+    <button class="btn secondary" onclick="window.print()">🖨 Print / Save as PDF</button>
+    <button class="btn secondary" onclick="exportJSON()">⬇ Export his data</button>
+    <label class="btn secondary" style="margin:0;">⬆ Import data
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </label>
+  </div>
+
+  <!-- ============ INPUTS ============ -->
+  <div class="grid">
+
+    <div class="card">
+      <h2>1. About Dad</h2>
+      <p class="hint">The basics that drive the whole forecast.</p>
+      <div class="row">
+        <div><label>Filing status</label>
+          <select id="filing">
+            <option value="single">Single</option>
+            <option value="married" selected>Married (filing jointly)</option>
+          </select>
+        </div>
+        <div><label>This year</label><input id="startYear" type="number" value="2026"></div>
+      </div>
+      <div class="row">
+        <div><label>Dad's current age</label><input id="age" type="number" value="60"></div>
+        <div><label>Mom's age <span class="sub">(if married)</span></label><input id="spouseAge" type="number" value="63"></div>
+      </div>
+      <div class="row">
+        <div><label>Plan through age</label><input id="planTo" type="number" value="95"></div>
+        <div><label>State income tax <span class="sub">%, rough</span></label><input id="stateTax" type="number" step="0.1" value="0"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Spending</h2>
+      <p class="hint">What he needs to live on each year, in today's dollars. The tool grows this with inflation.</p>
+      <label>Annual spending need <span class="sub">(after-tax lifestyle cost)</span></label>
+      <input id="spending" type="number" value="90000">
+      <div class="row">
+        <div><label>Inflation <span class="sub">% / yr</span></label><input id="inflation" type="number" step="0.1" value="2.5"></div>
+        <div><label>Investment return <span class="sub">% / yr</span></label><input id="return" type="number" step="0.1" value="5.5"></div>
+      </div>
+      <label>One-time / extra spending <span class="sub">optional — "age:amount", e.g. a new roof or big trip</span></label>
+      <input id="lumpSpend" type="text" placeholder="e.g. 72:30000, 85:60000">
+    </div>
+
+    <div class="card">
+      <h2>3. Accounts</h2>
+      <p class="hint">His three buckets of money. Each is taxed differently — that's the heart of the strategy.</p>
+      <label>Pre-tax <span class="sub">Traditional IRA / 401(k) — taxed when withdrawn, has RMDs</span></label>
+      <input id="pretax" type="number" value="1200000">
+      <label>Roth <span class="sub">already-taxed — grows & withdraws tax-free, no RMDs</span></label>
+      <input id="roth" type="number" value="150000">
+      <label>Taxable / brokerage <span class="sub">bank + investment accounts</span></label>
+      <input id="taxable" type="number" value="400000">
+      <label>Cost basis in taxable account <span class="sub">% that is original investment (not gains)</span></label>
+      <input id="basisPct" type="number" value="60">
+    </div>
+
+    <div class="card">
+      <h2>4. Guaranteed Income</h2>
+      <p class="hint">Money that arrives no matter what — Social Security and any pension.</p>
+      <label>Dad's Social Security <span class="sub">$ / month at his claiming age</span></label>
+      <div class="row">
+        <div><input id="ss1" type="number" value="3200"></div>
+        <div><label style="margin:0">claim at age</label><input id="ssAge1" type="number" value="70"></div>
+      </div>
+      <label>Spouse's Social Security <span class="sub">$ / month</span></label>
+      <div class="row">
+        <div><input id="ss2" type="number" value="1600"></div>
+        <div><label style="margin:0">claim at age</label><input id="ssAge2" type="number" value="67"></div>
+      </div>
+      <label>Pension <span class="sub">$ / year (0 if none)</span></label>
+      <input id="pension" type="number" value="0">
+    </div>
+
+  </div>
+
+  <!-- ============ VACATION WIDGET ============ -->
+  <div class="card" style="border-color:#bcdfd0; background:linear-gradient(180deg,#f3fbf6,#ffffff);">
+    <h2>🌴 Annual Vacation Planner</h2>
+    <p class="hint">They're savers, not spenders — so let's prove the yearly trip is affordable. This adds a vacation
+      to their spending every year and shows whether the plan still holds up. (Spoiler: seeing the green check is the point.)</p>
+    <div class="row3">
+      <div><label>Vacation budget <span class="sub">$ per year, today's dollars</span></label><input id="vacBudget" type="number" value="12000"></div>
+      <div><label>Start at Dad's age</label><input id="vacFrom" type="number" value="60"></div>
+      <div><label>Through Dad's age <span class="sub">the "go-go" years</span></label><input id="vacTo" type="number" value="80"></div>
+    </div>
+    <div id="vacBanner" style="margin-top:14px"></div>
+  </div>
+
+  <!-- ============ STRATEGY ============ -->
+  <div class="card">
+    <h2>5. The Roth Strategy to Test</h2>
+    <p class="hint">The tool always runs two scenarios side by side — <strong>"Do nothing"</strong> vs.
+      <strong>"Do Roth conversions"</strong> — so you can see whether converting helps.</p>
+    <label>How to size each year's conversion</label>
+    <select id="convMode" onchange="toggleConvMode()">
+      <option value="fixed">Convert a fixed dollar amount each year</option>
+      <option value="bracket">Convert just enough to "fill up" a tax bracket (smart mode)</option>
+    </select>
+    <div class="row3">
+      <div id="convAmtWrap"><label>Amount per year <span class="sub">$ pre-tax → Roth</span></label><input id="convAmt" type="number" value="60000"></div>
+      <div id="bracketWrap" style="display:none"><label>Fill up to the top of the…</label>
+        <select id="targetBracket">
+          <option value="0.12">12% bracket (very tax-efficient)</option>
+          <option value="0.22" selected>22% bracket (common target)</option>
+          <option value="0.24">24% bracket (aggressive)</option>
+        </select>
+      </div>
+      <div><label>Start converting at age</label><input id="convStart" type="number" value="60"></div>
+      <div><label>For how many years?</label><input id="convYears" type="number" value="6"></div>
+    </div>
+    <label>Withdrawal order <span class="sub">which accounts to spend first</span></label>
+    <select id="order">
+      <option value="taxable,pretax,roth">Taxable → Pre-tax → Roth (most common)</option>
+      <option value="pretax,taxable,roth">Pre-tax → Taxable → Roth</option>
+      <option value="taxable,roth,pretax">Taxable → Roth → Pre-tax</option>
+    </select>
+  </div>
+
+  <!-- ============ LEGACY & STRESS ============ -->
+  <div class="card">
+    <h2>6. Legacy & Reality Checks</h2>
+    <p class="hint">Two things retirees care about: what's left for heirs, and "what if the market drops right after I retire?"</p>
+    <div class="row">
+      <div><label>Heirs' tax rate <span class="sub">% — used to value the pre-tax account they'd inherit</span></label><input id="heirRate" type="number" value="24"></div>
+      <div></div>
+    </div>
+    <div class="check"><input type="checkbox" id="stress"> Stress test: model a rough market downturn in the first 5 years</div>
+    <div class="check"><input type="checkbox" id="showReal" onchange="rerun()"> Show all dollars in today's value <span class="sub" style="margin-left:6px">(easier to grasp than future inflated dollars)</span></div>
+  </div>
+
+  <details>
+    <summary>⚙️ Tax & rule assumptions (advanced — edit only if you know the current numbers)</summary>
+    <div class="row3" style="margin-bottom:16px">
+      <div><label>Standard deduction — single <span class="sub">incl. senior add-on</span></label><input id="sdSingle" type="number" value="17000"></div>
+      <div><label>Standard deduction — married</label><input id="sdMarried" type="number" value="34000"></div>
+      <div><label>Capital-gains tax rate <span class="sub">% on taxable-account gains</span></label><input id="cgRate" type="number" value="15"></div>
+    </div>
+    <div class="row">
+      <div><label>RMD start age <span class="sub">73 if born 1951–59, 75 if born 1960+</span></label><input id="rmdAge" type="number" value="75"></div>
+      <div><label>Tax-bracket year <span class="sub">label only</span></label><input id="bracketYear" type="number" value="2026"></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Federal brackets (10/12/22/24/32/35/37%) and IRMAA Medicare thresholds are
+      built in as ~2026 estimates, simplified and not inflation-indexed forward. Treat results as directional.</p>
+  </details>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="results" style="display:none">
+    <h2 style="color:var(--blue-d)">Results</h2>
+    <div id="savingsBox"></div>
+    <div class="twocol-results">
+      <div class="compare-box">
+        <h3>🅰️ Do nothing (no conversions)</h3>
+        <div id="summaryA"></div>
+      </div>
+      <div class="compare-box">
+        <h3>🅱️ With Roth conversions</h3>
+        <div id="summaryB"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Money over time</h2>
+      <p class="hint">Total savings remaining each year. Higher and lasting longer is better.</p>
+      <canvas id="chart"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:#9aa7b1"></span> Do nothing</span>
+        <span><span class="dot" style="background:#2e7d52"></span> With conversions</span>
+        <span><span class="dot" style="background:#c98a16"></span> RMDs begin</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Year-by-year detail</h2>
+      <p class="hint">The "With conversions" scenario. <span class="flag irmaa">IRMAA</span> = income may raise Medicare premiums &nbsp; <span class="flag surv">SURVIVOR</span> = single-filer years.</p>
+      <div class="tablewrap"><table id="detailTable"></table></div>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:13px; text-align:center; padding:20px">
+    Built for Dad • Runs entirely on this computer • No data leaves this page
+  </p>
+</div>
+
+<script>
+/* ---------- IRS Uniform Lifetime Table (RMD divisors) ---------- */
+const ULT = {72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,80:20.2,81:19.4,
+82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,88:13.7,89:12.9,90:12.2,91:11.5,92:10.8,93:10.1,
+94:9.5,95:8.9,96:8.4,97:7.8,98:7.3,99:6.8,100:6.4,101:6.0,102:5.6,103:5.2,104:4.9,105:4.6,106:4.3,
+107:4.1,108:3.9,109:3.7,110:3.5,111:3.4,112:3.3,113:3.1,114:3.0,115:2.9,116:2.8,117:2.7,118:2.5,119:2.3,120:2.0};
+function rmdDivisor(age){ if(age<72)return null; return ULT[age]||2.0; }
+
+/* ---------- 2026-estimate federal brackets ---------- */
+const BR = {
+  single:[[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
+  married:[[0,.10],[24800,.12],[100800,.22],[211400,.24],[403550,.32],[512450,.35],[768700,.37]]
+};
+const IRMAA = {
+  single:[[106000,0],[133000,1000],[167000,2500],[200000,4000],[500000,5600],[750000,6100]],
+  married:[[212000,0],[266000,1000],[334000,2500],[400000,4000],[750000,5600],[1500000,6100]]
+};
+function fedTax(taxable, filing){
+  if(taxable<=0) return 0; const b=BR[filing]; let tax=0;
+  for(let i=0;i<b.length;i++){ const lo=b[i][0], hi=(i+1<b.length)?b[i+1][0]:Infinity, rate=b[i][1];
+    if(taxable>lo){ tax += (Math.min(taxable,hi)-lo)*rate; } else break; }
+  return tax;
+}
+function marginalRate(taxable, filing){ const b=BR[filing]; let r=b[0][1];
+  for(const [lo,rate] of b){ if(taxable>lo) r=rate; } return r; }
+function bracketCeiling(rate, filing){ const b=BR[filing];
+  for(let i=0;i<b.length;i++){ if(Math.abs(b[i][1]-rate)<1e-9){ return (i+1<b.length)?b[i+1][0]:Infinity; } }
+  return Infinity; }
+function irmaaSurcharge(magi, filing, people){ const t=IRMAA[filing]; let s=0;
+  for(const [lo,amt] of t){ if(magi>=lo) s=amt; } return s*people; }
+
+/* ---------- Social Security taxable portion ---------- */
+function taxableSS(ssTotal, otherIncome, filing){
+  if(ssTotal<=0) return 0;
+  const prov = otherIncome + 0.5*ssTotal;
+  const [t1,t2] = filing==='married' ? [32000,44000] : [25000,34000];
+  if(prov<=t1) return 0;
+  if(prov<=t2) return Math.min(0.5*(prov-t1), 0.5*ssTotal);
+  const lower = Math.min(0.5*(t2-t1), 0.5*ssTotal);
+  return Math.min(0.85*ssTotal, 0.85*(prov-t2)+lower);
+}
+
+function num(id){ return parseFloat(document.getElementById(id).value)||0; }
+function val(id){ return document.getElementById(id).value; }
+function checked(id){ return document.getElementById(id).checked; }
+function parseLumps(str){ const m={}; (str||'').split(',').forEach(p=>{ const [a,v]=p.split(':');
+  if(a&&v) m[parseInt(a)]=parseFloat(v); }); return m; }
+
+/* ---------- The engine ---------- */
+function simulate(doConvert){
+  const baseFiling=val('filing');
+  const startYear=num('startYear'), age0=num('age'), spouseAge0=num('spouseAge'), planTo=num('planTo');
+  const inflation=num('inflation')/100, ret=num('return')/100, stateTax=num('stateTax')/100;
+  const cgRate=num('cgRate')/100, rmdAge=num('rmdAge');
+  const lumps=parseLumps(val('lumpSpend')); const order=val('order').split(',');
+  const survivorAge=0, survivorSpend=0.80; // survivor modeling removed from UI
+  const heirRate=num('heirRate')/100; const stress=checked('stress');
+  const convMode=val('convMode'), targetBracket=parseFloat(val('targetBracket'));
+  const vacBudget=num('vacBudget'), vacFrom=num('vacFrom'), vacTo=num('vacTo');
+
+  let pretax=num('pretax'), roth=num('roth'), taxable=num('taxable');
+  const basisPct=num('basisPct')/100;
+  const ss1=num('ss1')*12, ssAge1=num('ssAge1'), ss2=num('ss2')*12, ssAge2=num('ssAge2');
+  const pension=num('pension');
+  const convAmt=num('convAmt'), convStart=num('convStart'), convYears=num('convYears');
+
+  const stressSeq=[-0.15,-0.07,0.0,0.04,0.05];
+  const yearReturn = yr => (stress && yr<stressSeq.length) ? stressSeq[yr] : ret;
+
+  const rows=[]; let lifetimeTax=0, lifetimeTaxReal=0, depletedAge=null, lastInfl=1;
+  let vacCount=0, vacTotalReal=0;
+
+  for(let yr=0; age0+yr<=planTo; yr++){
+    const age=age0+yr, spouseAge=spouseAge0+yr, year=startYear+yr;
+    const infl=Math.pow(1+inflation,yr); lastInfl=infl;
+
+    const survivor=(baseFiling==='married' && survivorAge>0 && age>=survivorAge);
+    const filing = survivor ? 'single' : baseFiling;
+    const people = filing==='married' ? 2 : 1;
+    const sd = filing==='married' ? num('sdMarried') : num('sdSingle');
+
+    let spend = num('spending')*infl + (lumps[age]?lumps[age]*infl:0);
+    if(survivor) spend *= survivorSpend;
+    let vacThis=0;
+    if(vacBudget>0 && age>=vacFrom && age<=vacTo){ vacThis=vacBudget*infl; spend+=vacThis; vacCount++; vacTotalReal+=vacBudget; }
+
+    let ssThis=0;
+    if(survivor){ ssThis = Math.max(ss1,ss2)*infl; }
+    else { if(age>=ssAge1) ssThis += ss1*infl;
+           if(baseFiling==='married' && spouseAge>=ssAge2) ssThis += ss2*infl; }
+    const pensionThis = pension*infl;
+
+    let rmd=0; if(age>=rmdAge){ const d=rmdDivisor(age); if(d) rmd = pretax/d; }
+
+    // size the conversion
+    let conv=0;
+    const inWindow = doConvert && age>=convStart && age<convStart+convYears;
+    if(inWindow){
+      if(convMode==='fixed'){ conv = Math.min(convAmt, pretax-rmd); }
+      else { // fill to top of target bracket
+        const ordPre = pensionThis + rmd + taxableSS(ssThis, pensionThis+rmd, filing);
+        const taxablePre = Math.max(0, ordPre - sd);
+        const room = bracketCeiling(targetBracket, filing) - taxablePre;
+        conv = Math.min(Math.max(0,room), pretax-rmd);
+      }
+      if(conv<0) conv=0;
+    }
+
+    pretax -= rmd;
+    pretax -= conv; roth += conv;
+    let cashOnHand = pensionThis + rmd + ssThis;
+
+    let exT=0, exP=0, exR=0, capGain=0, tax=0;
+    for(let it=0; it<4; it++){
+      const needGross = spend + tax - cashOnHand;
+      exT=exP=exR=capGain=0;
+      let need=Math.max(0,needGross), aT=taxable, aP=pretax, aR=roth;
+      for(const bucket of order){
+        if(need<=0) break;
+        if(bucket==='taxable'){ const take=Math.min(need,aT); exT=take; aT-=take; need-=take; capGain=take*(1-basisPct); }
+        else if(bucket==='pretax'){ const take=Math.min(need,aP); exP=take; aP-=take; need-=take; }
+        else { const take=Math.min(need,aR); exR=take; aR-=take; need-=take; }
+      }
+      const ordBeforeSS = pensionThis + rmd + conv + exP;
+      const taxSS = taxableSS(ssThis, ordBeforeSS + capGain, filing);
+      const ordinary = ordBeforeSS + taxSS;
+      const taxableInc = Math.max(0, ordinary - sd);
+      const fed = fedTax(taxableInc, filing);
+      const cg = capGain*cgRate;
+      const st = (ordinary+capGain)*stateTax;
+      const irmaa = irmaaSurcharge(ordinary+capGain, filing, people);
+      tax = fed + cg + st + irmaa;
+    }
+
+    taxable -= exT; pretax -= exP; roth -= exR;
+    const ordBeforeSS = pensionThis + rmd + conv + exP;
+    const taxSS = taxableSS(ssThis, ordBeforeSS + capGain, filing);
+    const ordinary = ordBeforeSS + taxSS;
+    const irmaaHit = irmaaSurcharge(ordinary+capGain, filing, people) > 0;
+    const taxableInc = Math.max(0, ordinary - sd);
+    lifetimeTax += tax; lifetimeTaxReal += tax/infl;
+
+    let total = pretax+roth+taxable;
+    if(total<=0 && depletedAge===null) depletedAge=age;
+
+    const r=yearReturn(yr);
+    pretax*=(1+r); roth*=(1+r); taxable*=(1+r);
+
+    rows.push({year,age,spend,ss:ssThis,rmd,conv,tax,taxableInc,
+      total:Math.max(0,total),pretax:Math.max(0,pretax),roth:Math.max(0,roth),taxable:Math.max(0,taxable),
+      irmaa:irmaaHit,survivor,marginal:marginalRate(taxableInc,filing),infl});
+  }
+
+  const last=rows[rows.length-1]||{pretax:0,roth:0,taxable:0,total:0,infl:1};
+  const ending=last.total;
+  const legacy = last.roth + last.taxable + last.pretax*(1-heirRate); // after-tax value to heirs
+  return {rows, lifetimeTax, lifetimeTaxReal, depletedAge, ending,
+          endingReal:ending/lastInfl, legacy, legacyReal:legacy/lastInfl, rmdAge,
+          vacCount, vacTotalReal, vacAnnualReal:vacBudget};
+}
+
+/* ---------- Formatting ---------- */
+const fmt = n => '$'+Math.round(n).toLocaleString();
+const fmtK = n => Math.abs(n)>=1e6 ? '$'+(n/1e6).toFixed(2)+'M' : '$'+Math.round(n/1000)+'k';
+function R(){ return checked('showReal'); } // show in today's dollars?
+
+function summaryHTML(s){
+  const lasts = s.depletedAge ? `<span class="bad">runs out at age ${s.depletedAge}</span>`
+                              : `<span class="good">lasts the whole plan</span>`;
+  const end = R()? s.endingReal : s.ending;
+  const tax = R()? s.lifetimeTaxReal : s.lifetimeTax;
+  const leg = R()? s.legacyReal : s.legacy;
+  return `<div class="summary" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="stat"><div class="num">${fmtK(end)}</div><div class="lbl">Savings left at the end</div></div>
+      <div class="stat"><div class="num">${fmtK(tax)}</div><div class="lbl">Lifetime taxes</div></div>
+      <div class="stat"><div class="num">${fmtK(leg)}</div><div class="lbl">After-tax value to heirs</div></div>
+    </div>
+    <p style="text-align:center; margin:12px 0 0; font-size:15px">Money ${lasts}</p>`;
+}
+
+let lastA=null, lastB=null;
+function run(){
+  const A=simulate(false), B=simulate(true); lastA=A; lastB=B;
+  document.getElementById('results').style.display='block';
+  render();
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+function rerun(){ if(lastA) render(); }
+function render(){
+  const A=lastA, B=lastB;
+  document.getElementById('summaryA').innerHTML=summaryHTML(A);
+  document.getElementById('summaryB').innerHTML=summaryHTML(B);
+  const taxDiff=(R()?A.lifetimeTaxReal:A.lifetimeTax)-(R()?B.lifetimeTaxReal:B.lifetimeTax);
+  const legDiff=(R()?B.legacyReal:B.legacy)-(R()?A.legacyReal:A.legacy);
+  const box=document.getElementById('savingsBox');
+  const better=legDiff>=0; box.className='savings '+(better?'pos':'neg');
+  box.innerHTML=`<strong>Bottom line:</strong> Converting changes lifetime taxes by
+     <strong>${taxDiff>=0?'−':'+'}${fmt(Math.abs(taxDiff))}</strong> ${taxDiff>=0?'(less tax)':'(more tax)'}
+     and changes the after-tax inheritance by
+     <strong>${legDiff>=0?'+':'−'}${fmt(Math.abs(legDiff))}</strong>.
+     ${better?'In this scenario, converting looks favorable.':'In this scenario, converting does not clearly help — worth a closer look with a CPA.'}`;
+  drawVacBanner(B);
+  drawChart(A,B); drawTable(B);
+}
+
+function drawVacBanner(s){
+  const el=document.getElementById('vacBanner'); if(!el) return;
+  if(!s.vacCount){ el.innerHTML=''; return; }
+  const ok = !s.depletedAge; // money still lasts WITH the vacations baked in
+  el.className='savings '+(ok?'pos':'neg');
+  el.innerHTML = ok
+    ? `🌴 <strong>Yes — they can take the trip.</strong> This plan already funds
+        <strong>${s.vacCount} yearly vacations</strong> at about <strong>${fmt(s.vacAnnualReal)}</strong> each
+        (today's dollars) and the money <strong>still lasts the whole plan</strong>. Tell them to book it.`
+    : `🌴 With <strong>${s.vacCount} yearly vacations</strong> at ${fmt(s.vacAnnualReal)} each, the money runs short
+        at age ${s.depletedAge}. Try trimming the budget or shortening the vacation window — small changes, then re-run.`;
+}
+
+/* ---------- Chart ---------- */
+function drawChart(A,B){
+  const c=document.getElementById('chart'), dpr=window.devicePixelRatio||1;
+  const W=c.clientWidth, H=300; c.width=W*dpr; c.height=H*dpr;
+  const ctx=c.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+  const v=r=>R()?r.total/r.infl:r.total;
+  const pad={l:60,r:16,t:16,b:34};
+  const maxV=Math.max(...A.rows.map(v), ...B.rows.map(v),1);
+  const ages=B.rows.map(r=>r.age); const a0=ages[0], a1=ages[ages.length-1];
+  const x=a=>pad.l+(a-a0)/(a1-a0)*(W-pad.l-pad.r);
+  const y=val=>H-pad.b-(val/maxV)*(H-pad.t-pad.b);
+  ctx.strokeStyle='#eef2f5'; ctx.fillStyle='#5b6770'; ctx.font='11px sans-serif';
+  for(let i=0;i<=4;i++){ const vv=maxV*i/4, yy=y(vv);
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke(); ctx.fillText(fmtK(vv),6,yy+4); }
+  for(let a=Math.ceil(a0/5)*5; a<=a1; a+=5){ ctx.fillText(a, x(a)-6, H-12); }
+  const rmdA=B.rmdAge; if(rmdA>=a0&&rmdA<=a1){ ctx.strokeStyle='#c98a16'; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(x(rmdA),pad.t); ctx.lineTo(x(rmdA),H-pad.b); ctx.stroke(); ctx.setLineDash([]); }
+  const line=(rows,color)=>{ ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.beginPath();
+    rows.forEach((r,i)=>{ const px=x(r.age),py=y(v(r)); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }); ctx.stroke(); };
+  line(A.rows,'#9aa7b1'); line(B.rows,'#2e7d52');
+}
+
+function drawTable(s){
+  const t=document.getElementById('detailTable'); const real=R();
+  const d=(x,infl)=>real? x/infl : x;
+  let h=`<thead><tr><th>Age</th><th>Year</th><th>Spending</th><th>Soc. Sec.</th><th>RMD</th>
+    <th>Roth conv.</th><th>Taxable inc.</th><th>Marg. rate</th><th>Taxes</th><th>Pre-tax</th>
+    <th>Roth</th><th>Taxable</th><th>Total left</th></tr></thead><tbody>`;
+  s.rows.forEach(r=>{
+    const flags=(r.irmaa?' <span class="flag irmaa">IRMAA</span>':'')+(r.survivor?' <span class="flag surv">SURVIVOR</span>':'');
+    h+=`<tr><td>${r.age}${flags}</td><td>${r.year}</td>
+      <td>${fmt(d(r.spend,r.infl))}</td><td>${fmt(d(r.ss,r.infl))}</td><td>${r.rmd?fmt(d(r.rmd,r.infl)):'—'}</td>
+      <td>${r.conv?fmt(d(r.conv,r.infl)):'—'}</td><td>${fmt(d(r.taxableInc,r.infl))}</td><td>${Math.round(r.marginal*100)}%</td>
+      <td>${fmt(d(r.tax,r.infl))}</td><td>${fmt(d(r.pretax,r.infl))}</td><td>${fmt(d(r.roth,r.infl))}</td>
+      <td>${fmt(d(r.taxable,r.infl))}</td><td><strong>${fmt(d(r.total,r.infl))}</strong></td></tr>`;
+  });
+  t.innerHTML=h+'</tbody>';
+}
+
+/* ---------- UI helpers ---------- */
+function toggleConvMode(){ const m=val('convMode');
+  document.getElementById('convAmtWrap').style.display = m==='fixed'?'block':'none';
+  document.getElementById('bracketWrap').style.display = m==='bracket'?'block':'none'; }
+
+/* ---------- Save / load / import / export ---------- */
+const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
+'spending','inflation','return','lumpSpend','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
+'pension','vacBudget','vacFrom','vacTo','convMode','convAmt','targetBracket','convStart','convYears','order','heirRate','stress','showReal',
+'sdSingle','sdMarried','cgRate','rmdAge','bracketYear'];
+function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
+  o[f]= el.type==='checkbox'?el.checked:el.value; }); return o; }
+function apply(o){ FIELDS.forEach(f=>{ if(o[f]!==undefined){ const el=document.getElementById(f);
+  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); toggleConvMode(); }
+function saveData(){ localStorage.setItem('dadRetirement', JSON.stringify(collect())); flash('Saved on this computer ✓'); }
+function exportJSON(){ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dad-retirement.json'; a.click(); }
+function importJSON(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ apply(JSON.parse(r.result)); flash('Loaded ✓'); }catch{ alert('Could not read that file.'); } };
+  r.readAsText(f); }
+function flash(msg){ const b=document.querySelector('.actions'); const s=document.createElement('span');
+  s.textContent=msg; s.style.color='#2e7d52'; s.style.fontWeight='600'; b.appendChild(s);
+  setTimeout(()=>s.remove(),2500); }
+
+window.onload=()=>{ const saved=localStorage.getItem('dadRetirement');
+  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } toggleConvMode(); };
+</script>
+</body>
+</html>
