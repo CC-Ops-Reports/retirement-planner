@@ -126,28 +126,29 @@
       <h2>2. Spending</h2>
       <p class="hint">What he needs to live on each year, in today's dollars. The tool grows this with inflation.</p>
       <label>Annual spending need <span class="sub">(after-tax lifestyle cost)</span></label>
-      <input id="spending" type="number" value="90000">
+      <input id="spending" type="text" inputmode="numeric" value="90,000" oninput="commafy(this)">
       <label>Vacation budget <span class="sub">$ per year for the annual trip (today's dollars)</span></label>
-      <input id="vacBudget" type="number" value="12000">
+      <input id="vacBudget" type="text" inputmode="numeric" value="12,000" oninput="commafy(this)">
       <p style="margin:10px 0 4px; font-style:italic; font-weight:700; font-size:13px; color:#2e7d52;">Courtney is making you take a vacation a year so DO IT!</p>
       <div class="row">
         <div><label>Inflation <span class="sub">% / yr</span></label><input id="inflation" type="number" step="0.1" value="2.5"></div>
         <div><label>Investment return <span class="sub">% / yr</span></label><input id="return" type="number" step="0.1" value="5.5"></div>
       </div>
-      <label>One-time / extra spending
-        <span class="sub" style="display:block; margin-top:3px;">optional — "age:amount", e.g. a new roof or big trip</span></label>
-      <input id="lumpSpend" type="text" placeholder="e.g. 72:30000, 85:60000">
+      <label>Extra / unexpected spending
+        <span class="sub" style="display:block; margin-top:3px;">estimate per year</span></label>
+      <input id="extraAnnual" type="text" inputmode="numeric" value="5,000" oninput="commafy(this)">
+      <p class="hint" style="margin:5px 0 0;">Anything not anticipated in the annual budget.</p>
     </div>
 
     <div class="card">
       <h2>3. Accounts</h2>
       <p class="hint">His three buckets of money. Each is taxed differently — that's the heart of the strategy.</p>
       <label>Pre-tax <span class="sub">Traditional IRA / 401(k) — taxed when withdrawn, has RMDs</span></label>
-      <input id="pretax" type="number" value="1200000">
+      <input id="pretax" type="text" inputmode="numeric" value="1,200,000" oninput="commafy(this)">
       <label>Roth <span class="sub">already-taxed — grows & withdraws tax-free, no RMDs</span></label>
-      <input id="roth" type="number" value="150000">
+      <input id="roth" type="text" inputmode="numeric" value="150,000" oninput="commafy(this)">
       <label>Taxable / brokerage <span class="sub">bank + investment accounts</span></label>
-      <input id="taxable" type="number" value="400000">
+      <input id="taxable" type="text" inputmode="numeric" value="400,000" oninput="commafy(this)">
       <label>Cost basis in taxable account <span class="sub">% that is original investment (not gains)</span></label>
       <input id="basisPct" type="number" value="60">
     </div>
@@ -155,34 +156,22 @@
     <div class="card">
       <h2>4. Guaranteed Income</h2>
       <p class="hint">Money that arrives no matter what — Social Security and any pension.</p>
-      <label>Dad's Social Security <span class="sub">$ / month at his claiming age</span></label>
+      <label>Dad's Social Security</label>
       <div class="row">
-        <div><input id="ss1" type="number" value="3200"></div>
+        <div><label style="margin:0">$ / month</label><input id="ss1" type="text" inputmode="numeric" value="3,200" oninput="commafy(this)"></div>
         <div><label style="margin:0">claim at age</label><input id="ssAge1" type="number" value="70"></div>
       </div>
-      <label>Spouse's Social Security <span class="sub">$ / month</span></label>
+      <label>Spouse's Social Security</label>
       <div class="row">
-        <div><input id="ss2" type="number" value="1600"></div>
+        <div><label style="margin:0">$ / month</label><input id="ss2" type="text" inputmode="numeric" value="1,600" oninput="commafy(this)"></div>
         <div><label style="margin:0">claim at age</label><input id="ssAge2" type="number" value="67"></div>
       </div>
       <label>Pension <span class="sub">$ / year (0 if none)</span></label>
-      <input id="pension" type="number" value="0">
+      <input id="pension" type="text" inputmode="numeric" value="0" oninput="commafy(this)">
     </div>
 
   </div>
 
-  <!-- ============ VACATION WIDGET ============ -->
-  <div class="card" style="border-color:#bcdfd0; background:linear-gradient(180deg,#f3fbf6,#ffffff);">
-    <h2>🌴 Annual Vacation Planner</h2>
-    <p class="hint">They're savers, not spenders — so let's prove the yearly trip is affordable. Set the budget up in
-      <strong>Spending</strong>; here you just pick which years, and we show whether the plan still holds up.
-      (Spoiler: seeing the green check is the point.)</p>
-    <div class="row">
-      <div><label>Start at Dad's age</label><input id="vacFrom" type="number" value="60"></div>
-      <div><label>Through Dad's age <span class="sub">the "go-go" years</span></label><input id="vacTo" type="number" value="80"></div>
-    </div>
-    <div id="vacBanner" style="margin-top:14px"></div>
-  </div>
 
   <!-- ============ STRATEGY ============ -->
   <div class="card">
@@ -195,7 +184,7 @@
       <option value="bracket">Convert just enough to "fill up" a tax bracket (smart mode)</option>
     </select>
     <div class="row3">
-      <div id="convAmtWrap"><label>Amount per year <span class="sub">$ pre-tax → Roth</span></label><input id="convAmt" type="number" value="60000"></div>
+      <div id="convAmtWrap"><label>Amount per year <span class="sub">$ pre-tax → Roth</span></label><input id="convAmt" type="text" inputmode="numeric" value="60,000" oninput="commafy(this)"></div>
       <div id="bracketWrap" style="display:none"><label>Fill up to the top of the…</label>
         <select id="targetBracket">
           <option value="0.12">12% bracket (very tax-efficient)</option>
@@ -229,8 +218,8 @@
   <details>
     <summary>⚙️ Tax & rule assumptions (advanced — edit only if you know the current numbers)</summary>
     <div class="row3" style="margin-bottom:16px">
-      <div><label>Standard deduction — single <span class="sub">incl. senior add-on</span></label><input id="sdSingle" type="number" value="17000"></div>
-      <div><label>Standard deduction — married</label><input id="sdMarried" type="number" value="34000"></div>
+      <div><label>Standard deduction — single <span class="sub">incl. senior add-on</span></label><input id="sdSingle" type="text" inputmode="numeric" value="17,000" oninput="commafy(this)"></div>
+      <div><label>Standard deduction — married</label><input id="sdMarried" type="text" inputmode="numeric" value="34,000" oninput="commafy(this)"></div>
       <div><label>Capital-gains tax rate <span class="sub">% on taxable-account gains</span></label><input id="cgRate" type="number" value="15"></div>
     </div>
     <div class="row">
@@ -319,7 +308,10 @@ function taxableSS(ssTotal, otherIncome, filing){
   return Math.min(0.85*ssTotal, 0.85*(prov-t2)+lower);
 }
 
-function num(id){ return parseFloat(document.getElementById(id).value)||0; }
+function num(id){ return parseFloat((document.getElementById(id).value||'').toString().replace(/,/g,''))||0; }
+function commafy(el){const v=el.value.replace(/[^0-9]/g,'');el.value=v?Number(v).toLocaleString('en-US'):'';}
+const DOLLARFIELDS=['spending','extraAnnual','pretax','roth','taxable','ss1','ss2','pension','vacBudget','convAmt','sdSingle','sdMarried'];
+function formatAll(){DOLLARFIELDS.forEach(id=>{const el=document.getElementById(id);if(el)commafy(el);});}
 function val(id){ return document.getElementById(id).value; }
 function checked(id){ return document.getElementById(id).checked; }
 function parseLumps(str){ const m={}; (str||'').split(',').forEach(p=>{ const [a,v]=p.split(':');
@@ -331,11 +323,11 @@ function simulate(doConvert){
   const startYear=num('startYear'), age0=num('age'), spouseAge0=num('spouseAge'), planTo=num('planTo');
   const inflation=num('inflation')/100, ret=num('return')/100, stateTax=num('stateTax')/100;
   const cgRate=num('cgRate')/100, rmdAge=num('rmdAge');
-  const lumps=parseLumps(val('lumpSpend')); const order=val('order').split(',');
+  const order=val('order').split(',');
   const survivorAge=0, survivorSpend=0.80; // survivor modeling removed from UI
   const heirRate=num('heirRate')/100; const stress=checked('stress');
   const convMode=val('convMode'), targetBracket=parseFloat(val('targetBracket'));
-  const vacBudget=num('vacBudget'), vacFrom=num('vacFrom'), vacTo=num('vacTo');
+  const vacBudget=num('vacBudget');
 
   let pretax=num('pretax'), roth=num('roth'), taxable=num('taxable');
   const basisPct=num('basisPct')/100;
@@ -358,10 +350,10 @@ function simulate(doConvert){
     const people = filing==='married' ? 2 : 1;
     const sd = filing==='married' ? num('sdMarried') : num('sdSingle');
 
-    let spend = num('spending')*infl + (lumps[age]?lumps[age]*infl:0);
+    let spend = num('spending')*infl + num('extraAnnual')*infl;
     if(survivor) spend *= survivorSpend;
     let vacThis=0;
-    if(vacBudget>0 && age>=vacFrom && age<=vacTo){ vacThis=vacBudget*infl; spend+=vacThis; vacCount++; vacTotalReal+=vacBudget; }
+    if(vacBudget>0){ vacThis=vacBudget*infl; spend+=vacThis; vacCount++; vacTotalReal+=vacBudget; }
 
     let ssThis=0;
     if(survivor){ ssThis = Math.max(ss1,ss2)*infl; }
@@ -541,13 +533,13 @@ function toggleConvMode(){ const m=val('convMode');
 
 /* ---------- Save / load / import / export ---------- */
 const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
-'spending','inflation','return','lumpSpend','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
-'pension','vacBudget','vacFrom','vacTo','convMode','convAmt','targetBracket','convStart','convYears','order','heirRate','stress','showReal',
+'spending','extraAnnual','inflation','return','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
+'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','heirRate','stress','showReal',
 'sdSingle','sdMarried','cgRate','rmdAge','bracketYear'];
 function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
   o[f]= el.type==='checkbox'?el.checked:el.value; }); return o; }
 function apply(o){ FIELDS.forEach(f=>{ if(o[f]!==undefined){ const el=document.getElementById(f);
-  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); toggleConvMode(); }
+  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); }
 function saveData(){ localStorage.setItem('dadRetirement', JSON.stringify(collect())); flash('Saved on this computer ✓'); }
 function exportJSON(){ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dad-retirement.json'; a.click(); }
@@ -559,7 +551,7 @@ function flash(msg){ const b=document.querySelector('.actions'); const s=documen
   setTimeout(()=>s.remove(),2500); }
 
 window.onload=()=>{ const saved=localStorage.getItem('dadRetirement');
-  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } toggleConvMode(); };
+  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); };
 </script>
 </body>
 </html>
