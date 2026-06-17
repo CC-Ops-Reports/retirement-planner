@@ -221,6 +221,18 @@
     <div id="strategyOut" style="margin-top:18px"></div>
   </div>
 
+  <!-- ============ RMD CALCULATOR ============ -->
+  <div class="card" style="border-color:#cdd9ec; background:linear-gradient(180deg,#f5f8fd,#ffffff);">
+    <h2>🔻 RMD Calculator <span class="sub" style="font-weight:400">— Required Minimum Distributions</span></h2>
+    <p class="hint">From his RMD age, the IRS forces a taxable withdrawal from his pre-tax accounts every year — whether he needs the cash or not. Enter his pre-tax balance and age to see the required amount and how it climbs over time.</p>
+    <div class="row3">
+      <div><label>Pre-tax balance today</label><input id="rmdcBal" type="text" inputmode="numeric" value="1,200,000" oninput="commafy(this);rmdCalc()"></div>
+      <div><label>Current age</label><input id="rmdcAge" type="number" value="60" oninput="rmdCalc()"></div>
+      <div><label>Assumed growth <span class="sub">%/yr until then</span></label><input id="rmdcGrow" type="number" step="0.1" value="5" oninput="rmdCalc()"></div>
+    </div>
+    <div id="rmdcOut" style="margin-top:16px"></div>
+  </div>
+
   <!-- ============ STRATEGY PLAYBOOK ============ -->
   <div class="card">
     <h2>📚 Strategy Playbook <span class="sub" style="font-weight:400">— the rules &amp; the moves, in plain English</span></h2>
@@ -484,6 +496,23 @@ function computeYear(o){
   const irmaa = irmaaSurcharge(magi, filing, people);
   return {ordinary,taxSS,fedTaxable,fed,marg,room,cgTax,sc,irmaa,magi,cgZeroRoom,total:fed+cgTax+sc+irmaa};
 }
+function rmdCalc(){
+  const el=document.getElementById('rmdcOut'); if(!el) return;
+  const bal=num('rmdcBal'), age=num('rmdcAge'), grow=num('rmdcGrow')/100, START=num('rmdAge')||75;
+  let b = age<START ? bal*Math.pow(1+grow, START-age) : bal;
+  const projAtStart=b; let rows='', first=null, lifetime=0;
+  for(let a=Math.max(age,START); a<=92; a++){
+    const div=ULT[a]||8.9, rmd=b/div; if(first===null) first=rmd; lifetime+=rmd;
+    rows+=`<tr><td>${a}</td><td>${div}</td><td>${fmt(rmd)}</td><td>${fmt(Math.max(0,b-rmd))}</td></tr>`;
+    b=Math.max(0,(b-rmd)*(1+grow));
+  }
+  const head = age<START
+    ? `At age ${age}, no RMD is required yet. Growing at ${num('rmdcGrow')}%/yr, today's <strong>${fmt(bal)}</strong> could become <strong>${fmt(projAtStart)}</strong> by age ${START} — a first-year RMD around <strong>${fmt(first)}</strong>, taxable whether he needs it or not.`
+    : `This year's required withdrawal is about <strong>${fmt(first)}</strong> (balance ÷ ${ULT[Math.max(age,START)]||8.9}).`;
+  el.innerHTML=`<div class="savings ${age<START?'pos':'neg'}">${head} Across ages ${START}–92 that's roughly <strong>${fmt(lifetime)}</strong> in forced, taxable withdrawals — exactly what Roth conversions before ${START} help shrink.</div>
+    <div class="tablewrap" style="max-height:240px; margin-top:6px"><table>
+      <thead><tr><th>Age</th><th>÷ factor</th><th>RMD</th><th>Balance after</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 function strategy(){
   const el=document.getElementById('strategyOut'); if(!el) return;
   const filing=val('filing'); const age=num('age'); const rmdAge=num('rmdAge');
@@ -538,7 +567,7 @@ function rmdPreview(){
 function num(id){ return parseFloat((document.getElementById(id).value||'').toString().replace(/,/g,''))||0; }
 function commafy(el){const v=el.value.replace(/[^0-9]/g,'');el.value=v?Number(v).toLocaleString('en-US'):'';}
 const DOLLARFIELDS=['spending','extraAnnual','pretax','roth','taxable','ss1','ss2','pension','vacBudget','convAmt','sdSingle','sdMarried',
-'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','lt0Single','lt0Married'];
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','lt0Single','lt0Married','rmdcBal'];
 function formatAll(){DOLLARFIELDS.forEach(id=>{const el=document.getElementById(id);if(el)commafy(el);});}
 function val(id){ return document.getElementById(id).value; }
 function checked(id){ return document.getElementById(id).checked; }
@@ -760,11 +789,11 @@ const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
 'spending','extraAnnual','inflation','return','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
 'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','stress','showReal',
 'sdSingle','sdMarried','cgRate','rmdAge','bracketYear',
-'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop','lt0Single','lt0Married'];
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop','lt0Single','lt0Married','rmdcBal','rmdcAge','rmdcGrow'];
 function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
   o[f]= el.type==='checkbox'?el.checked:el.value; }); return o; }
 function apply(o){ FIELDS.forEach(f=>{ if(o[f]!==undefined){ const el=document.getElementById(f);
-  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); strategy(); }
+  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); strategy(); rmdCalc(); }
 function saveData(){ localStorage.setItem('dadRetirement', JSON.stringify(collect())); flash('Saved on this computer ✓'); }
 function exportJSON(){ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dad-retirement.json'; a.click(); }
@@ -776,7 +805,7 @@ function flash(msg){ const b=document.querySelector('.actions'); const s=documen
   setTimeout(()=>s.remove(),2500); }
 
 window.onload=()=>{ const saved=localStorage.getItem('dadRetirement');
-  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); strategy(); };
+  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); strategy(); rmdCalc(); };
 </script>
 </body>
 </html>
