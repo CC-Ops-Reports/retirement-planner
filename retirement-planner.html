@@ -233,6 +233,21 @@
     <div id="rmdcOut" style="margin-top:16px"></div>
   </div>
 
+  <!-- ============ INHERITED IRA ============ -->
+  <div class="card" style="border-color:#cdd9ec; background:linear-gradient(180deg,#f5f8fd,#ffffff);">
+    <h2>🧬 Inherited IRA <span class="sub" style="font-weight:400">— different rules, its own RMD</span></h2>
+    <p class="hint">An IRA inherited from someone other than a spouse usually must be <strong>fully emptied within 10 years</strong>,
+      and in some cases requires an annual RMD along the way. Every withdrawal is taxable on top of his other income, so the
+      <em>timing</em> of these matters a lot.</p>
+    <div class="row3">
+      <div><label>Inherited IRA balance</label><input id="iiraBal" type="text" inputmode="numeric" value="0" oninput="commafy(this);iiraCalc()"></div>
+      <div><label>Beneficiary's current age <span class="sub">who inherited it</span></label><input id="iiraAge" type="number" value="60" oninput="iiraCalc()"></div>
+      <div><label>Year it was inherited</label><input id="iiraYear" type="number" value="2024" oninput="iiraCalc()"></div>
+    </div>
+    <div class="check" style="margin-top:6px"><input type="checkbox" id="iiraOwnerRMD" onchange="iiraCalc()"> The original owner had already started their own RMDs (passed away after their required start age)</div>
+    <div id="iiraOut" style="margin-top:14px"></div>
+  </div>
+
   <!-- ============ STRATEGY PLAYBOOK ============ -->
   <div class="card">
     <h2>📚 Strategy Playbook <span class="sub" style="font-weight:400">— the rules &amp; the moves, in plain English</span></h2>
@@ -513,6 +528,30 @@ function rmdCalc(){
     <div class="tablewrap" style="max-height:240px; margin-top:6px"><table>
       <thead><tr><th>Age</th><th>÷ factor</th><th>RMD</th><th>Balance after</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
+/* ---------- Inherited IRA (SECURE Act 10-year rule + Single Life Table) ---------- */
+const SLE={45:41.0,46:40.0,47:39.0,48:38.1,49:37.1,50:36.2,51:35.3,52:34.3,53:33.4,54:32.5,55:31.6,56:30.6,
+57:29.8,58:28.9,59:28.0,60:27.1,61:26.2,62:25.4,63:24.5,64:23.7,65:22.9,66:22.0,67:21.2,68:20.4,69:19.6,70:18.8,
+71:18.0,72:17.2,73:16.4,74:15.6,75:14.8,76:14.1,77:13.3,78:12.6,79:11.9,80:11.2,81:10.5,82:9.9,83:9.3,84:8.7,
+85:8.1,86:7.6,87:7.1,88:6.6,89:6.1,90:5.7,91:5.3,92:4.9,93:4.6,94:4.3,95:4.0};
+function iiraCalc(){
+  const el=document.getElementById('iiraOut'); if(!el) return;
+  const bal=num('iiraBal');
+  if(bal<=0){ el.innerHTML='<p class="hint" style="margin:0">Enter a balance above to see the inherited-IRA rules and RMD.</p>'; return; }
+  const age=num('iiraAge'), yr=num('iiraYear'), ownerRMD=checked('iiraOwnerRMD');
+  const thisYear=num('startYear')||2026;
+  const deadline=yr+10;                          // empty by Dec 31 of the 10th year after death
+  const yearsLeft=Math.max(1, deadline-thisYear);
+  const level=bal/yearsLeft;
+  const sle=SLE[age]||4.0, annualRMD=bal/sle;
+  let html=`<div class="savings ${yearsLeft<=2?'neg':'pos'}">`;
+  html+=`<strong>10-year rule:</strong> this account must be fully emptied by <strong>Dec 31, ${deadline}</strong> — about <strong>${yearsLeft} year(s)</strong> left. `;
+  html+=`To spread the tax bill evenly instead of one big hit, withdraw roughly <strong>${fmt(level)}/yr</strong>.`;
+  if(ownerRMD) html+=`<br><strong>Annual RMD required:</strong> at least <strong>${fmt(annualRMD)}</strong> this year (balance ÷ ${sle}, the single-life factor) — take more if needed to finish by ${deadline}.`;
+  else html+=`<br>No specific <em>annual</em> RMD is required (the original owner hadn't started theirs) — but the whole balance still must be gone by ${deadline}.`;
+  html+=` Every dollar withdrawn is taxable income on top of his other income — use the Strategy Explorer above to see the bracket impact.</div>`;
+  el.innerHTML=html;
+}
+
 function strategy(){
   const el=document.getElementById('strategyOut'); if(!el) return;
   const filing=val('filing'); const age=num('age'); const rmdAge=num('rmdAge');
@@ -567,7 +606,7 @@ function rmdPreview(){
 function num(id){ return parseFloat((document.getElementById(id).value||'').toString().replace(/,/g,''))||0; }
 function commafy(el){const v=el.value.replace(/[^0-9]/g,'');el.value=v?Number(v).toLocaleString('en-US'):'';}
 const DOLLARFIELDS=['spending','extraAnnual','pretax','roth','taxable','ss1','ss2','pension','vacBudget','convAmt','sdSingle','sdMarried',
-'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','lt0Single','lt0Married','rmdcBal'];
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','lt0Single','lt0Married','rmdcBal','iiraBal'];
 function formatAll(){DOLLARFIELDS.forEach(id=>{const el=document.getElementById(id);if(el)commafy(el);});}
 function val(id){ return document.getElementById(id).value; }
 function checked(id){ return document.getElementById(id).checked; }
@@ -789,11 +828,12 @@ const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
 'spending','extraAnnual','inflation','return','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
 'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','stress','showReal',
 'sdSingle','sdMarried','cgRate','rmdAge','bracketYear',
-'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop','lt0Single','lt0Married','rmdcBal','rmdcAge','rmdcGrow'];
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop','lt0Single','lt0Married','rmdcBal','rmdcAge','rmdcGrow',
+'iiraBal','iiraAge','iiraYear','iiraOwnerRMD'];
 function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
   o[f]= el.type==='checkbox'?el.checked:el.value; }); return o; }
 function apply(o){ FIELDS.forEach(f=>{ if(o[f]!==undefined){ const el=document.getElementById(f);
-  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); strategy(); rmdCalc(); }
+  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); strategy(); rmdCalc(); iiraCalc(); }
 function saveData(){ localStorage.setItem('dadRetirement', JSON.stringify(collect())); flash('Saved on this computer ✓'); }
 function exportJSON(){ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dad-retirement.json'; a.click(); }
@@ -805,7 +845,12 @@ function flash(msg){ const b=document.querySelector('.actions'); const s=documen
   setTimeout(()=>s.remove(),2500); }
 
 window.onload=()=>{ const saved=localStorage.getItem('dadRetirement');
-  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); strategy(); rmdCalc(); };
+  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); strategy(); rmdCalc(); iiraCalc(); };
+
+/* ---------- Auto-save: silently remember entries in THIS browser only ---------- */
+function persistSilently(){ try{ localStorage.setItem('dadRetirement', JSON.stringify(collect())); }catch{} }
+document.addEventListener('input', persistSilently);
+document.addEventListener('change', persistSilently);
 </script>
 </body>
 </html>
