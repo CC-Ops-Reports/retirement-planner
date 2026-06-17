@@ -221,14 +221,10 @@
     <div id="strategyOut" style="margin-top:18px"></div>
   </div>
 
-  <!-- ============ LEGACY & STRESS ============ -->
+  <!-- ============ REALITY CHECKS ============ -->
   <div class="card">
-    <h2>6. Legacy & Reality Checks</h2>
-    <p class="hint">Two things retirees care about: what's left for heirs, and "what if the market drops right after I retire?"</p>
-    <div class="row">
-      <div><label>Heirs' tax rate <span class="sub">% — used to value the pre-tax account they'd inherit</span></label><input id="heirRate" type="number" value="24"></div>
-      <div></div>
-    </div>
+    <h2>6. Reality Checks</h2>
+    <p class="hint">"What if the market drops right after I retire?" — and an easier way to read the numbers.</p>
     <div class="check"><input type="checkbox" id="stress"> Stress test: model a rough market downturn in the first 5 years</div>
     <div class="check"><input type="checkbox" id="showReal" onchange="rerun()"> Show all dollars in today's value <span class="sub" style="margin-left:6px">(easier to grasp than future inflated dollars)</span></div>
   </div>
@@ -419,7 +415,7 @@ function simulate(doConvert){
   const cgRate=num('cgRate')/100, rmdAge=num('rmdAge');
   const order=val('order').split(',');
   const survivorAge=0, survivorSpend=0.80; // survivor modeling removed from UI
-  const heirRate=num('heirRate')/100; const stress=checked('stress');
+  const stress=checked('stress');
   const convMode=val('convMode'), targetBracket=parseFloat(val('targetBracket'));
   const vacBudget=num('vacBudget');
 
@@ -518,9 +514,8 @@ function simulate(doConvert){
 
   const last=rows[rows.length-1]||{pretax:0,roth:0,taxable:0,total:0,infl:1};
   const ending=last.total;
-  const legacy = last.roth + last.taxable + last.pretax*(1-heirRate); // after-tax value to heirs
   return {rows, lifetimeTax, lifetimeTaxReal, depletedAge, ending,
-          endingReal:ending/lastInfl, legacy, legacyReal:legacy/lastInfl, rmdAge,
+          endingReal:ending/lastInfl, rmdAge,
           vacCount, vacTotalReal, vacAnnualReal:vacBudget};
 }
 
@@ -534,11 +529,9 @@ function summaryHTML(s){
                               : `<span class="good">lasts the whole plan</span>`;
   const end = R()? s.endingReal : s.ending;
   const tax = R()? s.lifetimeTaxReal : s.lifetimeTax;
-  const leg = R()? s.legacyReal : s.legacy;
-  return `<div class="summary" style="grid-template-columns:1fr 1fr 1fr">
+  return `<div class="summary" style="grid-template-columns:1fr 1fr">
       <div class="stat"><div class="num">${fmtK(end)}</div><div class="lbl">Savings left at the end</div></div>
       <div class="stat"><div class="num">${fmtK(tax)}</div><div class="lbl">Lifetime taxes</div></div>
-      <div class="stat"><div class="num">${fmtK(leg)}</div><div class="lbl">After-tax value to heirs</div></div>
     </div>
     <p style="text-align:center; margin:12px 0 0; font-size:15px">Money ${lasts}</p>`;
 }
@@ -556,13 +549,12 @@ function render(){
   document.getElementById('summaryA').innerHTML=summaryHTML(A);
   document.getElementById('summaryB').innerHTML=summaryHTML(B);
   const taxDiff=(R()?A.lifetimeTaxReal:A.lifetimeTax)-(R()?B.lifetimeTaxReal:B.lifetimeTax);
-  const legDiff=(R()?B.legacyReal:B.legacy)-(R()?A.legacyReal:A.legacy);
+  const endDiff=(R()?B.endingReal:B.ending)-(R()?A.endingReal:A.ending);
   const box=document.getElementById('savingsBox');
-  const better=legDiff>=0; box.className='savings '+(better?'pos':'neg');
+  const better=endDiff>=0; box.className='savings '+(better?'pos':'neg');
   box.innerHTML=`<strong>Bottom line:</strong> Converting changes lifetime taxes by
      <strong>${taxDiff>=0?'−':'+'}${fmt(Math.abs(taxDiff))}</strong> ${taxDiff>=0?'(less tax)':'(more tax)'}
-     and changes the after-tax inheritance by
-     <strong>${legDiff>=0?'+':'−'}${fmt(Math.abs(legDiff))}</strong>.
+     and leaves <strong>${endDiff>=0?'+':'−'}${fmt(Math.abs(endDiff))}</strong> ${endDiff>=0?'more':'less'} at the end.
      ${better?'In this scenario, converting looks favorable.':'In this scenario, converting does not clearly help — worth a closer look with a CPA.'}`;
   drawVacBanner(B);
   drawChart(A,B); drawTable(B);
@@ -628,7 +620,7 @@ function toggleConvMode(){ const m=val('convMode');
 /* ---------- Save / load / import / export ---------- */
 const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
 'spending','extraAnnual','inflation','return','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
-'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','heirRate','stress','showReal',
+'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','stress','showReal',
 'sdSingle','sdMarried','cgRate','rmdAge','bracketYear',
 'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop'];
 function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
