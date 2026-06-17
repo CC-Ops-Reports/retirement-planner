@@ -118,7 +118,7 @@
       </div>
       <div class="row">
         <div><label>Plan through age</label><input id="planTo" type="number" value="95"></div>
-        <div><label>State income tax <span class="sub">%, rough</span></label><input id="stateTax" type="number" step="0.1" value="0"></div>
+        <div><label>State income tax <span class="sub">% rough — SC, see Explorer below</span></label><input id="stateTax" type="number" step="0.1" value="3"></div>
       </div>
     </div>
 
@@ -203,6 +203,24 @@
     </select>
   </div>
 
+  <!-- ============ STRATEGY EXPLORER ============ -->
+  <div class="card" style="border-color:#cdd9ec; background:linear-gradient(180deg,#f5f8fd,#ffffff);">
+    <h2>🎯 This-Year Strategy Explorer <span class="sub" style="font-weight:400">— South Carolina</span></h2>
+    <p class="hint">Test one year at a time: type in a withdrawal or a Roth conversion and instantly see what it does to his
+      <strong>taxable income</strong> and taxes — federal, South Carolina, and Medicare (IRMAA). Perfect for "how much can I
+      convert before jumping into the next bracket?" SC doesn't tax Social Security and gives big retiree deductions — both built in.</p>
+    <div class="row3">
+      <div><label>Other ordinary income <span class="sub">pension, interest, wages</span></label><input id="seOther" type="text" inputmode="numeric" value="0" oninput="commafy(this);strategy()"></div>
+      <div><label>Social Security <span class="sub">$ for the whole year</span></label><input id="seSS" type="text" inputmode="numeric" value="0" oninput="commafy(this);strategy()"></div>
+      <div><label>Capital gains realized <span class="sub">from the taxable account</span></label><input id="seCG" type="text" inputmode="numeric" value="0" oninput="commafy(this);strategy()"></div>
+    </div>
+    <div class="row">
+      <div><label>💵 Pre-tax withdrawal <span class="sub">from IRA / 401(k) this year</span></label><input id="seWithdraw" type="text" inputmode="numeric" value="0" oninput="commafy(this);strategy()"></div>
+      <div><label>🔄 Roth conversion <span class="sub">pre-tax → Roth this year</span></label><input id="seConvert" type="text" inputmode="numeric" value="50,000" oninput="commafy(this);strategy()"></div>
+    </div>
+    <div id="strategyOut" style="margin-top:18px"></div>
+  </div>
+
   <!-- ============ LEGACY & STRESS ============ -->
   <div class="card">
     <h2>6. Legacy & Reality Checks</h2>
@@ -226,8 +244,15 @@
       <div><label>RMD start age <span class="sub">73 if born 1951–59, 75 if born 1960+</span></label><input id="rmdAge" type="number" value="75"></div>
       <div><label>Tax-bracket year <span class="sub">label only</span></label><input id="bracketYear" type="number" value="2026"></div>
     </div>
-    <p class="hint" style="margin-top:12px">Federal brackets (10/12/22/24/32/35/37%) and IRMAA Medicare thresholds are
-      built in as ~2026 estimates, simplified and not inflation-indexed forward. Treat results as directional.</p>
+    <div class="row3" style="margin-top:14px">
+      <div><label>SC: no tax up to <span class="sub">0% bracket</span></label><input id="scB0" type="text" inputmode="numeric" value="3,560" oninput="commafy(this)"></div>
+      <div><label>SC: 3% bracket up to</label><input id="scB1" type="text" inputmode="numeric" value="17,830" oninput="commafy(this)"></div>
+      <div><label>SC top rate <span class="sub">% above that</span></label><input id="scRTop" type="number" step="0.1" value="6.2"></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Federal brackets (10/12/22/24/32/35/37%) and IRMAA Medicare thresholds are built
+      in as ~2026 estimates. <strong>South Carolina</strong> perks are built into the Strategy Explorer: Social Security isn't
+      taxed; at 65+ each spouse gets a $10,000 retirement-income deduction and a $15,000 age deduction. All figures are 2025–26
+      estimates, simplified — treat as directional and confirm big moves with a CPA.</p>
   </details>
 
   <!-- ============ RESULTS ============ -->
@@ -308,9 +333,78 @@ function taxableSS(ssTotal, otherIncome, filing){
   return Math.min(0.85*ssTotal, 0.85*(prov-t2)+lower);
 }
 
+/* ---------- South Carolina state tax (estimate) ---------- */
+function scSchedule(x){
+  const b0=num('scB0'), b1=num('scB1'), rTop=num('scRTop')/100, rMid=0.03;
+  if(x<=b0) return 0;
+  if(x<=b1) return (x-b0)*rMid;
+  return (b1-b0)*rMid + (x-b1)*rTop;
+}
+function scTaxable(ordinary, taxSS, retirementIncome, sd, age, spouseAge, filing){
+  let base = Math.max(0, ordinary - sd);            // ~ federal taxable income (ordinary)
+  base -= taxSS;                                    // SC exempts Social Security
+  const cap = a => a>=65 ? 10000 : 3000;            // retirement-income deduction per person
+  const retCapTotal = cap(age) + (filing==='married' ? cap(spouseAge) : 0);
+  const retDed = Math.min(Math.max(0,retirementIncome), retCapTotal);
+  base -= retDed;
+  const persons = filing==='married' ? [age,spouseAge] : [age];
+  const retPer = persons.length ? retDed/persons.length : 0;
+  let ageDed=0; persons.forEach(a=>{ if(a>=65) ageDed += Math.max(0, 15000-retPer); }); // 65+ age deduction
+  base -= ageDed;
+  return Math.max(0, base);
+}
+
+/* ---------- This-year strategy explorer ---------- */
+function computeYear(o){
+  const filing=val('filing'), people=filing==='married'?2:1;
+  const age=num('age'), spouseAge=num('spouseAge');
+  const sd=filing==='married'?num('sdMarried'):num('sdSingle');
+  const ordBeforeSS = o.other + o.wd + o.conv;
+  const taxSS = taxableSS(o.ss, ordBeforeSS + o.cg, filing);
+  const ordinary = ordBeforeSS + taxSS;
+  const fedTaxable = Math.max(0, ordinary - sd);
+  const fed = fedTax(fedTaxable, filing);
+  const marg = marginalRate(fedTaxable, filing);
+  const room = Math.max(0, bracketCeiling(marg, filing) - fedTaxable);
+  const cgTax = o.cg * (num('cgRate')/100);
+  const sc = scSchedule(scTaxable(ordinary, taxSS, o.wd + o.conv, sd, age, spouseAge, filing));
+  const irmaa = irmaaSurcharge(ordinary + o.cg, filing, people);
+  return {ordinary,taxSS,fedTaxable,fed,marg,room,cgTax,sc,irmaa,total:fed+cgTax+sc+irmaa};
+}
+function strategy(){
+  const el=document.getElementById('strategyOut'); if(!el) return;
+  const filing=val('filing');
+  const o={other:num('seOther'),ss:num('seSS'),cg:num('seCG'),wd:num('seWithdraw'),conv:num('seConvert')};
+  const cur=computeYear(o), base=computeYear({...o,wd:0,conv:0});
+  const move=o.wd+o.conv, extraTax=cur.total-base.total, margMove=move>0?extraTax/move:0;
+  const head=r=>Math.max(0, bracketCeiling(r,filing)-base.fedTaxable);
+  const kind = (o.conv&&!o.wd)?'as a conversion':(o.wd&&!o.conv)?'as a withdrawal':'out';
+  el.innerHTML=`
+    <div class="summary" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat"><div class="num">${fmt(cur.fedTaxable)}</div><div class="lbl">Federal taxable income</div></div>
+      <div class="stat"><div class="num">${Math.round(cur.marg*100)}%</div><div class="lbl">Top federal bracket</div></div>
+      <div class="stat"><div class="num">${fmt(cur.fed+cur.cgTax)}</div><div class="lbl">Federal tax</div></div>
+      <div class="stat"><div class="num">${fmt(cur.sc)}</div><div class="lbl">SC state tax</div></div>
+    </div>
+    <div class="summary" style="grid-template-columns:repeat(4,1fr); margin-top:12px">
+      <div class="stat"><div class="num">${fmt(cur.total)}</div><div class="lbl">Total tax this year</div></div>
+      <div class="stat"><div class="num">${move?Math.round(margMove*100)+'%':'—'}</div><div class="lbl">Real rate on the move</div></div>
+      <div class="stat"><div class="num">${fmt(cur.taxSS)}</div><div class="lbl">Of SS that's taxed</div></div>
+      <div class="stat"><div class="num">${cur.irmaa>0?'⚠ Yes':'No'}</div><div class="lbl">Triggers IRMAA?</div></div>
+    </div>
+    <div class="savings ${cur.irmaa>0?'neg':'pos'}" style="margin-top:16px">
+      <strong>Strategy read:</strong> ${move?`Taking <strong>${fmt(move)}</strong> ${kind} adds it to his taxable income and costs about
+      <strong>${fmt(extraTax)}</strong> in extra tax — an effective <strong>${Math.round(margMove*100)}%</strong> on those dollars.`:'Enter a withdrawal or conversion above to see the impact.'}
+      Before this move, room left to the top of each bracket: <strong>12% → ${fmt(head(0.12))}</strong>,
+      <strong>22% → ${fmt(head(0.22))}</strong>, <strong>24% → ${fmt(head(0.24))}</strong>.
+      ${cur.irmaa>0?`<br>⚠ This income may raise Medicare premiums (IRMAA) by ~${fmt(cur.irmaa)} for the year — a hidden surcharge worth avoiding if you're near the line.`:''}
+    </div>`;
+}
+
 function num(id){ return parseFloat((document.getElementById(id).value||'').toString().replace(/,/g,''))||0; }
 function commafy(el){const v=el.value.replace(/[^0-9]/g,'');el.value=v?Number(v).toLocaleString('en-US'):'';}
-const DOLLARFIELDS=['spending','extraAnnual','pretax','roth','taxable','ss1','ss2','pension','vacBudget','convAmt','sdSingle','sdMarried'];
+const DOLLARFIELDS=['spending','extraAnnual','pretax','roth','taxable','ss1','ss2','pension','vacBudget','convAmt','sdSingle','sdMarried',
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1'];
 function formatAll(){DOLLARFIELDS.forEach(id=>{const el=document.getElementById(id);if(el)commafy(el);});}
 function val(id){ return document.getElementById(id).value; }
 function checked(id){ return document.getElementById(id).checked; }
@@ -535,11 +629,12 @@ function toggleConvMode(){ const m=val('convMode');
 const FIELDS=['filing','startYear','age','spouseAge','planTo','stateTax',
 'spending','extraAnnual','inflation','return','pretax','roth','taxable','basisPct','ss1','ssAge1','ss2','ssAge2',
 'pension','vacBudget','convMode','convAmt','targetBracket','convStart','convYears','order','heirRate','stress','showReal',
-'sdSingle','sdMarried','cgRate','rmdAge','bracketYear'];
+'sdSingle','sdMarried','cgRate','rmdAge','bracketYear',
+'seOther','seSS','seCG','seWithdraw','seConvert','scB0','scB1','scRTop'];
 function collect(){ const o={}; FIELDS.forEach(f=>{ const el=document.getElementById(f);
   o[f]= el.type==='checkbox'?el.checked:el.value; }); return o; }
 function apply(o){ FIELDS.forEach(f=>{ if(o[f]!==undefined){ const el=document.getElementById(f);
-  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); }
+  if(el.type==='checkbox') el.checked=!!o[f]; else el.value=o[f]; } }); formatAll(); toggleConvMode(); strategy(); }
 function saveData(){ localStorage.setItem('dadRetirement', JSON.stringify(collect())); flash('Saved on this computer ✓'); }
 function exportJSON(){ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dad-retirement.json'; a.click(); }
@@ -551,7 +646,7 @@ function flash(msg){ const b=document.querySelector('.actions'); const s=documen
   setTimeout(()=>s.remove(),2500); }
 
 window.onload=()=>{ const saved=localStorage.getItem('dadRetirement');
-  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); };
+  if(saved){ try{ apply(JSON.parse(saved)); }catch{} } formatAll(); toggleConvMode(); strategy(); };
 </script>
 </body>
 </html>
